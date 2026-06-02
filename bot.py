@@ -29,4 +29,9 @@ def callback_handler(call):
         bot.edit_message_text("Ты отправляешь аудио -> Я расшифровываю -> Генерирую 3 варианта ответа.", 
                               call.message.chat.id, call.message.message_id)
 
-bot.infinity_polling()
+import os
+# ... (весь остальной код)
+
+if __name__ == '__main__':
+    bot.infinity_polling()
+    
