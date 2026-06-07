@@ -56,6 +56,11 @@ async def back_to_main(callback: CallbackQuery):
     text = "👋 Привет! Я твой ИИ-ассистент для анализа голосовых сообщений."
     await callback.message.edit_text(text, reply_markup=get_main_menu())
 
+@dp.callback_query(F.data == "send_audio")
+async def ask_for_audio(callback: CallbackQuery):
+    await callback.message.answer("🎙 Отлично! Теперь просто запиши и пришли мне голосовое сообщение.")
+    await callback.answer() # Убирает «часики» загрузки на кнопке
+
 # --- ХЕНДЛЕР ДЛЯ ГОЛОСОВЫХ ---
 @dp.message(F.voice)
 async def handle_voice(message: Message):
