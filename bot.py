@@ -80,6 +80,8 @@ async def handle_text(message: Message):
 async def main():
     # Запускаем веб-сервер в фоне
     await start_web_server()
+     # Эту строку нужно добавить сюда, чтобы сбросить конфликты
+    await bot.delete_webhook(drop_pending_updates=True)
     # Запускаем бота
     await dp.start_polling(bot)
 
