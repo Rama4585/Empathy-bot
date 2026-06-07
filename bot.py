@@ -25,13 +25,13 @@ def get_back_menu():
 # --- ХЕНДЛЕРЫ ---
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
-    text = "👋 Привет! Я твой ИИ-ассистент для анализа голосовых сообщений.\n\n" \
-           "Я перевожу аудио в текст, анализирую смысл и предлагаю 3 варианта ответа."
+    text = """👋 Привет! Я твой ИИ-ассистент для анализа голосовых сообщений.
+    Я перевожу аудио в текст, анализирую смысл и эмоции собеседника. Предлагаю 3 варианта ответа."""
     await message.answer(text, reply_markup=get_main_menu())
 
 @dp.callback_query(F.data == "how_it_works")
 async def show_info(callback: CallbackQuery):
-    text = "⚙️ Как это работает:\n1. Присылаешь ГС.\n2. Я расшифровываю его.\n3. Генерирую 3 варианта ответа с разной эмоцией."
+    text = "⚙️ Как это работает:\n1. Присылаешь ГС (голосовое сообщение).\n2. Я расшифровываю его.\n3. Генерирую 3 варианта ответа."
     await callback.message.edit_text(text, reply_markup=get_back_menu())
 
 @dp.callback_query(F.data == "main_menu")
