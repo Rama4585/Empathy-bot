@@ -5,13 +5,12 @@ from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiohttp import web
 
-# Получаем токен из переменной окружения
+# 1. Настройка бота
 TOKEN = os.getenv('BOT_TOKEN')
-
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# --- ВЕБ-СЕРВЕР ДЛЯ RENDER ---
+# 2. Фиктивный веб-сервер для Render (чтобы он видел порт и не отключал бота)
 async def handle(request):
     return web.Response(text="Бот запущен и работает!")
 
@@ -81,3 +80,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
