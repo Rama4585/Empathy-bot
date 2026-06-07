@@ -3,12 +3,29 @@ import os
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiohttp import web
 
 # Получаем токен из переменной окружения
 TOKEN = os.getenv('BOT_TOKEN')
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+# --- ВЕБ-СЕРВЕР ДЛЯ RENDER ---
+async def handle(request):
+    return web.Response(text="Бот запущен и работает!")
+
+app = web.Application()
+app.router.add_get('/', handle)
+
+async def start_web_server():
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Берем порт из переменной окружения, которую дает Render
+    port = int(os.environ.get('PORT', 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f"Web server started on port {port}")
 
 # --- КЛАВИАТУРЫ ---
 def get_main_menu():
@@ -40,23 +57,26 @@ async def back_to_main(callback: CallbackQuery):
     text = "👋 Привет! Я твой ИИ-ассистент для анализа голосовых сообщений."
     await callback.message.edit_text(text, reply_markup=get_main_menu())
 
-# --- НОВЫЙ ХЕНДЛЕР ДЛЯ ГОЛОСОВЫХ ---
+# --- ХЕНДЛЕР ДЛЯ ГОЛОСОВЫХ ---
 @dp.message(F.voice)
 async def handle_voice(message: Message):
-    # Получаем информацию о файле и скачиваем в память
     file_id = message.voice.file_id
     file = await bot.get_file(file_id)
+    # Скачиваем файл (в памяти)
     voice_file = await bot.download_file(file.file_path)
     
     await message.answer("✅ Аудио успешно получено! Сейчас расшифрую...")
-    # Здесь позже мы добавим вызов нейросети для расшифровки
 
-# --- ХЕНДЛЕР ДЛЯ ТЕКСТА (чтобы не было ошибок) ---
+# --- ХЕНДЛЕР ДЛЯ ТЕКСТА ---
 @dp.message()
 async def handle_text(message: Message):
     await message.answer("Я жду от тебя голосовое сообщение для анализа! Пришли мне ГС.")
 
+# --- ЗАПУСК ---
 async def main():
+    # Запускаем веб-сервер в фоне
+    await start_web_server()
+    # Запускаем бота
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
