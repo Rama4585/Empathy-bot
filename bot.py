@@ -494,7 +494,6 @@ async def start_web():
 
 
 async def main():
-
     await start_web()
 
     await bot.delete_webhook(
@@ -504,12 +503,12 @@ async def main():
     try:
         await dp.start_polling(bot)
 
-except Exception as e:
-    print("POLLING ERROR:", e)
-    raise
+    except Exception as e:
+        print("POLLING ERROR:", e)
+        raise
 
-finally:
-    print("BOT STOPPED")
+    finally:
+        print("BOT STOPPED")
 
 
 if __name__ == "__main__":
