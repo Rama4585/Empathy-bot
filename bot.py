@@ -1,7 +1,5 @@
 import asyncio
 import os
-import json
-
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import (
@@ -15,13 +13,14 @@ from aiogram.types import (
 
 from aiohttp import web
 from openai import OpenAI
-
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # =========================
 # ИНИЦИАЛИЗАЦИЯ
 # =========================
 
 TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URL = os.getenv("MONGO_URL")
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
@@ -30,19 +29,22 @@ client = OpenAI(
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# База данных для сохранения балансов
-DB_FILE = "balances.json"
+# Подключение к MongoDB
+db_client = AsyncIOMotorClient(MONGO_URL)
+db = db_client.bot_database
+users_col = db.users
 
-def load_balances():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r") as f:
-            return json.load(f)
-    return {}
+# ФУНКЦИИ БД (Вместо JSON)
+async def get_balance(uid):
+    user = await users_col.find_one({"uid": str(uid)})
+    return user["balance"] if user else 5
 
-def save_balances(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f)
-
+async def update_balance(uid, amount_change):
+    await users_col.update_one(
+        {"uid": str(uid)},
+        {"$inc": {"balance": amount_change}},
+        upsert=True
+    )
 
 # =========================
 # ПАКЕТЫ
@@ -123,24 +125,27 @@ def process_audio(file_path):
 
 
 # =========================
-# СТАРТ И ХЕНДЛЕРЫ (ТВОИ ОРИГИНАЛЬНЫЕ)
+# ХЕНДЛЕРЫ
 # =========================
 
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
-    uid = str(message.from_user.id)
-    balances = load_balances()
-    if uid not in balances:
-        balances[uid] = {"balance": 5}
-        save_balances(balances)
-
+    uid = message.from_user.id
+    bal = await get_balance(uid)
     text = "🎙 <b>Разберу голосовое за 5 секунд</b>\n\n✓ Покажу суть сообщения\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Просто отправь голосовое"
-    await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu(balances[uid]["balance"]))
+    await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu(bal))
+
+@dp.callback_query(F.data == "send_audio")
+async def send_audio_prompt(callback: CallbackQuery):
+    bal = await get_balance(callback.from_user.id)
+    if bal <= 0:
+        await callback.answer("⚠️ Необходимо пополнить запросы", show_alert=True)
+    else:
+        await callback.answer("🎧 Жду от тебя ГС. Не трать свое драгоценное время. Я помогу тебе за 5 секунд", show_alert=True)
 
 @dp.callback_query(F.data == "main_menu")
 async def back(callback: CallbackQuery):
-    balances = load_balances()
-    bal = balances.get(str(callback.from_user.id), {}).get("balance", 0)
+    bal = await get_balance(callback.from_user.id)
     await callback.message.edit_text("🎙 <b>Разберу голосовое за 5 секунд</b>\n\n✓ Покажу главное\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Отправь голосовое", parse_mode="HTML", reply_markup=get_main_menu(bal))
 
 @dp.callback_query(F.data == "example")
@@ -169,18 +174,13 @@ async def pre_checkout(query: PreCheckoutQuery):
 @dp.message(F.successful_payment)
 async def payment(message: Message):
     amount = int(message.successful_payment.invoice_payload.split("_")[1])
-    uid = str(message.from_user.id)
-    balances = load_balances()
-    if uid not in balances: balances[uid] = {"balance": 0}
-    balances[uid]["balance"] += amount
-    save_balances(balances)
+    await update_balance(message.from_user.id, amount)
     await message.answer(f"✅ Добавлено {amount} разборов")
 
 @dp.message(F.voice)
 async def voice(message: Message):
-    uid = str(message.from_user.id)
-    balances = load_balances()
-    if balances.get(uid, {}).get("balance", 0) <= 0:
+    uid = message.from_user.id
+    if await get_balance(uid) <= 0:
         await message.answer("⚠️ Разборы закончились\n\nКупи пакет через меню /start")
         return
 
@@ -190,19 +190,17 @@ async def voice(message: Message):
     await bot.download_file(file.file_path, path)
     try:
         transcript, answer = await asyncio.to_thread(process_audio, path)
-        balances = load_balances()
-        balances[uid]["balance"] -= 1
-        save_balances(balances)
-        await message.answer(f"🎧 Разбор готов\n\n📝 Расшифровка:\n{transcript}\n\n{answer}\n\n✨ Осталось:\n{balances[uid]['balance']}")
+        await update_balance(uid, -1)
+        new_bal = await get_balance(uid)
+        await message.answer(f"🎧 Разбор готов\n\n📝 Расшифровка:\n{transcript}\n\n{answer}\n\n✨ Осталось:\n{new_bal}")
     except Exception as e:
         await message.answer(f"⚠️ Ошибка:\n{e}")
     finally:
         if os.path.exists(path): os.remove(path)
         await status.delete()
 
-
 # =========================
-# WEB + MAIN (Параллельный запуск)
+# WEB + MAIN
 # =========================
 
 async def start_web():
