@@ -485,7 +485,7 @@ async def start_web():
         int(
             os.getenv(
                 "PORT",
-                8080
+                10000
             )
         )
     )
