@@ -501,7 +501,15 @@ async def main():
         drop_pending_updates=True
     )
 
+    try:
     await dp.start_polling(bot)
+
+except Exception as e:
+    print("POLLING ERROR:", e)
+    raise
+
+finally:
+    print("BOT STOPPED")
 
 
 if __name__ == "__main__":
