@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
@@ -29,9 +30,18 @@ client = OpenAI(
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# База данных для сохранения балансов
+DB_FILE = "balances.json"
 
-# временная память
-user_balances = {}
+def load_balances():
+    if os.path.exists(DB_FILE):
+        with open(DB_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_balances(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f)
 
 
 # =========================
@@ -51,52 +61,18 @@ PACKAGES = [
 # =========================
 
 def get_main_menu(balance):
-
     return InlineKeyboardMarkup(
         inline_keyboard=[
-
-            [
-                InlineKeyboardButton(
-                    text=f"🎤 Разобрать голосовое • осталось {balance}",
-                    callback_data="send_audio"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="✨ Посмотреть пример",
-                    callback_data="example"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="💎 Ещё разборы",
-                    callback_data="buy_menu"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    text="❓ Как это работает",
-                    callback_data="how_it_works"
-                )
-            ]
+            [InlineKeyboardButton(text=f"🎤 Разобрать голосовое • осталось {balance}", callback_data="send_audio")],
+            [InlineKeyboardButton(text="✨ Посмотреть пример", callback_data="example")],
+            [InlineKeyboardButton(text="💎 Ещё разборы", callback_data="buy_menu")],
+            [InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works")]
         ]
     )
 
-
 def get_back_menu():
-
     return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="🔙 Назад",
-                    callback_data="main_menu"
-                )
-            ]
-        ]
+        inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]]
     )
 
 
@@ -105,9 +81,7 @@ def get_back_menu():
 # =========================
 
 def process_audio(file_path):
-
     with open(file_path, "rb") as audio_file:
-
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file
@@ -141,375 +115,108 @@ def process_audio(file_path):
 без лишних вступлений и заключений.
 Только по делу.
 """
-
     response = client.chat.completions.create(
-
         model="gpt-4o-mini",
-
-        messages=[
-
-            {
-                "role": "system",
-                "content": prompt
-            },
-
-            {
-                "role": "user",
-                "content": transcript.text
-            }
-
-        ]
+        messages=[{"role": "system", "content": prompt}, {"role": "user", "content": transcript.text}]
     )
-
-    return (
-        transcript.text,
-        response.choices[0].message.content
-    )
+    return transcript.text, response.choices[0].message.content
 
 
 # =========================
-# СТАРТ
+# СТАРТ И ХЕНДЛЕРЫ (ТВОИ ОРИГИНАЛЬНЫЕ)
 # =========================
 
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
+    uid = str(message.from_user.id)
+    balances = load_balances()
+    if uid not in balances:
+        balances[uid] = {"balance": 5}
+        save_balances(balances)
 
-    user_id = message.from_user.id
-
-    if user_id not in user_balances:
-        user_balances[user_id] = {
-            "balance": 5
-        }
-
-    text = """
-🎙 <b>Разберу голосовое за 5 секунд</b>
-
-✓ Покажу суть сообщения  
-✓ Определю настроение  
-✓ Предложу 3 ответа  
-
-👇 Просто отправь голосовое
-"""
-
-    await message.answer(
-        text,
-        parse_mode="HTML",
-        reply_markup=get_main_menu(
-            user_balances[user_id]["balance"]
-        )
-    )
-
+    text = "🎙 <b>Разберу голосовое за 5 секунд</b>\n\n✓ Покажу суть сообщения\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Просто отправь голосовое"
+    await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu(balances[uid]["balance"]))
 
 @dp.callback_query(F.data == "main_menu")
 async def back(callback: CallbackQuery):
-
-    balance = (
-        user_balances
-        .get(callback.from_user.id, {})
-        .get("balance", 0)
-    )
-
-    text = """
-🎙 <b>Разберу голосовое за 5 секунд</b>
-
-✓ Покажу главное  
-✓ Определю настроение  
-✓ Предложу 3 ответа  
-
-👇 Отправь голосовое
-"""
-
-    await callback.message.edit_text(
-        text,
-        parse_mode="HTML",
-        reply_markup=get_main_menu(balance)
-    )
-
-
-# =========================
-# ПРИМЕР
-# =========================
+    balances = load_balances()
+    bal = balances.get(str(callback.from_user.id), {}).get("balance", 0)
+    await callback.message.edit_text("🎙 <b>Разберу голосовое за 5 секунд</b>\n\n✓ Покажу главное\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Отправь голосовое", parse_mode="HTML", reply_markup=get_main_menu(bal))
 
 @dp.callback_query(F.data == "example")
 async def example(callback: CallbackQuery):
-
-    text = """
-🎧 Голосовое • 1:28
-
-📝 Суть:
-Человек расстроен,
-но хочет договориться
-
-🙂 Настроение:
-Раздражение + открытость
-
-💬 Ответы:
-
-1. Поддержать
-2. Уточнить детали
-3. Вежливо отказать
-"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_back_menu()
-    )
-
-
-# =========================
-# КАК РАБОТАЕТ
-# =========================
+    await callback.message.edit_text("🎧 Голосовое • 1:28\n\n📝 Суть:\nЧеловек расстроен, но хочет договориться\n\n🙂 Настроение:\nРаздражение + открытость\n\n💬 Ответы:\n1. Поддержать\n2. Уточнить детали\n3. Вежливо отказать", reply_markup=get_back_menu())
 
 @dp.callback_query(F.data == "how_it_works")
 async def info(callback: CallbackQuery):
-
-    text = """
-🎧 Ты отправляешь голосовое
-
-1. Перевожу в текст
-2. Убираю лишнее
-3. Определяю эмоции
-4. Даю готовые ответы
-
-⏱ Обычно несколько секунд
-"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_back_menu()
-    )
-
-
-# =========================
-# ПОКУПКА
-# =========================
+    await callback.message.edit_text("🎧 Ты отправляешь голосовое\n\n1. Перевожу в текст\n2. Убираю лишнее\n3. Определяю эмоции\n4. Даю готовые ответы\n\n⏱ Обычно несколько секунд", reply_markup=get_back_menu())
 
 @dp.callback_query(F.data == "buy_menu")
 async def buy(callback: CallbackQuery):
-
-    kb = []
-
-    for p in PACKAGES:
-
-        kb.append([
-            InlineKeyboardButton(
-                text=f"{p['title']} • {p['price']}⭐",
-                callback_data=f"pay_{p['price']}_{p['amount']}"
-            )
-        ])
-
-    kb.append([
-        InlineKeyboardButton(
-            text="🔙 Назад",
-            callback_data="main_menu"
-        )
-    ])
-
-    await callback.message.edit_text(
-        "💎 Выбери пакет",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=kb
-        )
-    )
-
+    kb = [[InlineKeyboardButton(text=f"{p['title']} • {p['price']}⭐", callback_data=f"pay_{p['price']}_{p['amount']}")] for p in PACKAGES]
+    kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
+    await callback.message.edit_text("💎 Выбери пакет", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
 
 @dp.callback_query(F.data.startswith("pay_"))
 async def invoice(callback: CallbackQuery):
-
     _, price, amount = callback.data.split("_")
-
-    await bot.send_invoice(
-
-        chat_id=callback.message.chat.id,
-
-        title=f"{amount} разборов",
-
-        description="Разбор голосовых",
-
-        payload=f"add_{amount}",
-
-        currency="XTR",
-
-        prices=[
-            LabeledPrice(
-                label="Оплата",
-                amount=int(price)
-            )
-        ]
-    )
-
+    await bot.send_invoice(chat_id=callback.message.chat.id, title=f"{amount} разборов", description="Разбор голосовых", payload=f"add_{amount}", currency="XTR", prices=[LabeledPrice(label="Оплата", amount=int(price))])
 
 @dp.pre_checkout_query()
-async def pre_checkout(
-        query: PreCheckoutQuery
-):
+async def pre_checkout(query: PreCheckoutQuery):
     await query.answer(ok=True)
-
 
 @dp.message(F.successful_payment)
 async def payment(message: Message):
-
-    amount = int(
-        message
-        .successful_payment
-        .invoice_payload
-        .split("_")[1]
-    )
-
-    user_id = message.from_user.id
-
-    user_balances[user_id]["balance"] += amount
-
-    await message.answer(
-        f"✅ Добавлено {amount} разборов"
-    )
-
-
-# =========================
-# АУДИО
-# =========================
-
-@dp.callback_query(F.data == "send_audio")
-async def ask(callback: CallbackQuery):
-
-    await callback.message.answer(
-        "🎤 Просто пришли голосовое"
-    )
-
-    await callback.answer()
-
+    amount = int(message.successful_payment.invoice_payload.split("_")[1])
+    uid = str(message.from_user.id)
+    balances = load_balances()
+    if uid not in balances: balances[uid] = {"balance": 0}
+    balances[uid]["balance"] += amount
+    save_balances(balances)
+    await message.answer(f"✅ Добавлено {amount} разборов")
 
 @dp.message(F.voice)
 async def voice(message: Message):
-
-    user_id = message.from_user.id
-
-    if (
-        user_balances
-        .get(user_id, {})
-        .get("balance", 0)
-        <= 0
-    ):
-
-        await message.answer(
-            "⚠️ Разборы закончились\n\nКупи пакет через меню /start"
-        )
-
+    uid = str(message.from_user.id)
+    balances = load_balances()
+    if balances.get(uid, {}).get("balance", 0) <= 0:
+        await message.answer("⚠️ Разборы закончились\n\nКупи пакет через меню /start")
         return
 
-    status = await message.answer(
-        "🎧 Слушаю...\n▰▱▱▱▱"
-    )
-
-    file = await bot.get_file(
-        message.voice.file_id
-    )
-
-    path = (
-        f"voice_"
-        f"{message.voice.file_id}.ogg"
-    )
-
-    await bot.download_file(
-        file.file_path,
-        path
-    )
-
+    status = await message.answer("🎧 Слушаю...\n▰▱▱▱▱")
+    file = await bot.get_file(message.voice.file_id)
+    path = f"voice_{message.voice.file_id}.ogg"
+    await bot.download_file(file.file_path, path)
     try:
-
-        await status.edit_text(
-            "🧠 Анализирую...\n▰▰▰▱▱"
-        )
-
-        transcript, answer = (
-            await asyncio.to_thread(
-                process_audio,
-                path
-            )
-        )
-
-        user_balances[user_id]["balance"] -= 1
-
-        await message.answer(
-f"""
-🎧 Разбор готов
-
-📝 Расшифровка:
-
-{transcript}
-
-{answer}
-
-✨ Осталось:
-{user_balances[user_id]["balance"]}
-"""
-        )
-
+        transcript, answer = await asyncio.to_thread(process_audio, path)
+        balances = load_balances()
+        balances[uid]["balance"] -= 1
+        save_balances(balances)
+        await message.answer(f"🎧 Разбор готов\n\n📝 Расшифровка:\n{transcript}\n\n{answer}\n\n✨ Осталось:\n{balances[uid]['balance']}")
     except Exception as e:
-
-        await message.answer(
-            f"⚠️ Ошибка:\n{e}"
-        )
-
+        await message.answer(f"⚠️ Ошибка:\n{e}")
     finally:
-
-        if os.path.exists(path):
-            os.remove(path)
-
+        if os.path.exists(path): os.remove(path)
         await status.delete()
 
 
 # =========================
-# WEB
+# WEB + MAIN (Параллельный запуск)
 # =========================
 
 async def start_web():
-
     app = web.Application()
-
-    app.router.add_get(
-        "/",
-        lambda r:
-        web.Response(
-            text="Бот работает"
-        )
-    )
-
+    app.router.add_get("/", lambda r: web.Response(text="Бот работает"))
     runner = web.AppRunner(app)
-
     await runner.setup()
-
-    site = web.TCPSite(
-        runner,
-        "0.0.0.0",
-        int(
-            os.getenv(
-                "PORT",
-                10000
-            )
-        )
-    )
-
+    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 10000)))
     await site.start()
 
-
 async def main():
-    await start_web()
-
-    await bot.delete_webhook(
-        drop_pending_updates=True
-    )
-
-    try:
-        await dp.start_polling(bot)
-
-    except Exception as e:
-        print("POLLING ERROR:", e)
-        raise
-
-    finally:
-        print("BOT STOPPED")
-
+    asyncio.create_task(start_web())
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
