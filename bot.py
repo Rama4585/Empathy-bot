@@ -200,21 +200,30 @@ async def voice(message: Message):
         await status.delete()
 
 # =========================
-# WEB + MAIN
+# WEB + MAIN (Стабильный запуск)
 # =========================
 
-async def start_web():
+async def on_startup():
+    print("Бот запущен и готов к работе")
+
+async def main():
+    # Удаляем вебхуки, чтобы polling работал чисто
+    await bot.delete_webhook(drop_pending_updates=True)
+    
+    # Запускаем веб-сервер в фоне (Render требует наличия веб-сервера)
     app = web.Application()
     app.router.add_get("/", lambda r: web.Response(text="Бот работает"))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 10000)))
     await site.start()
-
-async def main():
-    asyncio.create_task(start_web())
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    
+    # Запускаем самого бота
+    await dp.start_polling(bot, on_startup=on_startup)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
+
