@@ -502,7 +502,7 @@ async def main():
     )
 
     try:
-    await dp.start_polling(bot)
+        await dp.start_polling(bot)
 
 except Exception as e:
     print("POLLING ERROR:", e)
