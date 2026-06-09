@@ -196,8 +196,13 @@ async def channel(callback: CallbackQuery):
     
 @dp.callback_query(F.data == "main_menu")
 async def back(callback: CallbackQuery):
-bal = await get_balance(callback.from_user.id)
-await callback.message.edit_text("🎙 <b>Разберу голосовое за 5-15 секунд</b>\n\n✓ Покажу главное\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Отправь голосовое", parse_mode="HTML", reply_markup=get_main_menu(bal))
+    bal = await get_balance(callback.from_user.id)
+
+    await callback.message.edit_text(
+        "🎙 <b>Разберу голосовое за 5-15 секунд</b>\n\n✓ Покажу главное\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Отправь голосовое",
+        parse_mode="HTML",
+        reply_markup=get_main_menu(bal)
+    )
 
 @dp.callback_query(F.data == "example")
 async def example(callback: CallbackQuery):
