@@ -252,29 +252,53 @@ async def voice(message: Message):
     file = await bot.get_file(message.voice.file_id)
     path = f"voice_{message.voice.file_id}.ogg"
     await bot.download_file(file.file_path, path)
-    try:
-        transcript, answer = await asyncio.to_thread(process_audio, path)
-        await update_balance(uid, -1)
-        new_bal = await get_balance(uid)
-        await message.answer(
-f"""
+    
+try:
+    transcript, answer = await asyncio.to_thread(process_audio, path)
+
+    await update_balance(uid, -1)
+
+    new_bal = await get_balance(uid)
+
+    await message.answer(
+        f"""
 📝 Разбор готов
 
 {answer}
 
 ✨ Осталось попыток: {new_bal}
 """,
-reply_markup=InlineKeyboardMarkup(
-inline_keyboard=[
-[InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")],
-[InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Попробуй этого бота")],
-[InlineKeyboardButton(text="💎 Получить ещё попытки", callback_data="buy_menu")],
-[InlineKeyboardButton(text="🚀 Подписаться", callback_data="channel")],
-    ]))
-except Exception as e: await message.answer(f"⚠️ Ошибка:\n{e}")
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="🔁 Разобрать ещё одно",
+                    callback_data="main_menu"
+                )],
+                [InlineKeyboardButton(
+                    text="📢 Поделиться ботом",
+                    switch_inline_query="Попробуй этого бота"
+                )],
+                [InlineKeyboardButton(
+                    text="💎 Получить ещё попытки",
+                    callback_data="buy_menu"
+                )],
+                [InlineKeyboardButton(
+                    text="🚀 Подписаться",
+                    callback_data="channel"
+                )]
+            ]
+        )
+    )
+
+except Exception as e:
+    await message.answer(f"⚠️ Ошибка:\n{e}")
+
 finally:
-    if os.path.exists(path): os.remove(path)
-    await status.delete()
+    if os.path.exists(path):
+        os.remove(path)
+
+    await status.delete())
+    
 # =========================
 # WEB + MAIN (Стабильный запуск)
 # =========================
