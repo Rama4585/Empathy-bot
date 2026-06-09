@@ -31,13 +31,13 @@ api_key=os.getenv("OPENAI_API_KEY")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-Подключение к MongoDB
+# Подключение к MongoDB
 
 db_client = AsyncIOMotorClient(MONGO_URL)
 db = db_client.bot_database
 users_col = db.users
 
-ФУНКЦИИ БД (Вместо JSON)
+# ФУНКЦИИ БД (Вместо JSON)
 
 async def get_balance(uid):
 user = await users_col.find_one({"uid": str(uid)})
