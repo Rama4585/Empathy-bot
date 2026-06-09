@@ -287,7 +287,7 @@ try:
                     callback_data="channel"
                 )]
             ]
-        )
+)
     )
 
 except Exception as e:
@@ -297,7 +297,7 @@ finally:
     if os.path.exists(path):
         os.remove(path)
 
-    await status.delete())
+    await status.delete()
     
 # =========================
 # WEB + MAIN (Стабильный запуск)
