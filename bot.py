@@ -142,11 +142,10 @@ def process_audio(file_path):
 
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
-uid = message.from_user.id
-bal = await get_balance(uid)
+    uid = message.from_user.id
+    bal = await get_balance(uid)
 
-text = """
-
+    text = """
 🎧 <b>Отправь голосовое</b>
 
 Я быстро выделю главное
@@ -156,10 +155,7 @@ text = """
 ⏱ Обычно ответ занимает 5–15 секунд
 """
 
-await message.answer(  
-    text,  
-    parse_mode="HTML",  
-    reply_markup=get_main_menu(bal))
+    await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu(bal))
 
 @dp.callback_query(F.data == "send_audio")
 async def send_audio_prompt(callback: CallbackQuery):
