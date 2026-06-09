@@ -230,7 +230,10 @@ async def example(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "how_it_works")
 async def info(callback: CallbackQuery):
-await callback.message.edit_text("🎧 Ты отправляешь голосовое\n\n1. Перевожу в текст\n2. Убираю лишнее\n3. Определяю эмоции\n4. Даю готовые ответы\n\n⏱ Обычно ответ занимает 5-15 секунд", reply_markup=get_back_menu())
+    await callback.message.edit_text(
+        "🎧 Ты отправляешь голосовое\n\n1. Перевожу в текст\n2. Убираю лишнее\n3. Определяю эмоции\n4. Даю готовые ответы\n\n⏱ Обычно ответ занимает 5-15 секунд",
+        reply_markup=get_back_menu()
+    ) 
 
 @dp.callback_query(F.data == "buy_menu")
 async def buy(callback: CallbackQuery):
