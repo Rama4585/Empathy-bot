@@ -207,8 +207,7 @@ async def back(callback: CallbackQuery):
 @dp.callback_query(F.data == "example")
 async def example(callback: CallbackQuery):
 
-await callback.message.edit_text(
-
+    await callback.message.edit_text(
 """
 🎧 Голосовое • 1:28
 
@@ -222,15 +221,12 @@ await callback.message.edit_text(
 
 1. «Понял тебя. Давай спокойно обсудим»
 
-
 2. «Что именно тебя больше всего задело?»
-
 
 3. «Сейчас не готов это обсуждать, но услышал тебя»
 """,
-reply_markup=get_back_menu())
-
-
+        reply_markup=get_back_menu()
+    )
 
 @dp.callback_query(F.data == "how_it_works")
 async def info(callback: CallbackQuery):
