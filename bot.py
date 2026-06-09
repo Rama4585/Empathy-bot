@@ -171,23 +171,15 @@ async def send_audio_prompt(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "channel")
 async def channel(callback: CallbackQuery):
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 Перейти на канал", url="https://t.me/empathy_community")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]
+        ]
+    )
 
-keyboard = InlineKeyboardMarkup(  
-    inline_keyboard=[  
-        [InlineKeyboardButton(  
-            text="🚀 Перейти в канал",  
-            url="https://t.me/empathy_community"  
-        )],  
-        [InlineKeyboardButton(  
-            text="🔙 Назад",  
-            callback_data="main_menu"  
-        )]  
-    ]  
-)  
-
-await callback.message.edit_text(
-
-"""
+    await callback.message.edit_text(
+        """
 🚀 Подпишись на канал
 
 Что получишь:
@@ -199,8 +191,9 @@ await callback.message.edit_text(
 
 Присоединяйся 👇
 """,
-reply_markup=keyboard)
-
+        reply_markup=keyboard
+    )
+    
 @dp.callback_query(F.data == "main_menu")
 async def back(callback: CallbackQuery):
 bal = await get_balance(callback.from_user.id)
