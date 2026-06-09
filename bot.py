@@ -237,87 +237,114 @@ async def info(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "buy_menu")
 async def buy(callback: CallbackQuery):
-kb = [[InlineKeyboardButton(text=f"{p['title']} • {p['price']}⭐", callback_data=f"pay_{p['price']}_{p['amount']}")] for p in PACKAGES]
-kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
-await callback.message.edit_text("💎 Выбери пакет", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
+    kb = [[InlineKeyboardButton(text=f"{p['title']} • {p['price']}⭐", callback_data=f"pay_{p['price']}_{p['amount']}")] for p in PACKAGES]
+    kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
+    await callback.message.edit_text("💎 Выбери пакет", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+    )
 
 @dp.callback_query(F.data.startswith("pay_"))
 async def invoice(callback: CallbackQuery):
-, price, amount = callback.data.split("")
-await bot.send_invoice(chat_id=callback.message.chat.id, title=f"{amount} разборов", description="Разбор голосовых", payload=f"add_{amount}", currency="XTR", prices=[LabeledPrice(label="Оплата", amount=int(price))])
+    _, price, amount = callback.data.split("_")
+
+    await bot.send_invoice(
+        chat_id=callback.message.chat.id,
+        title=f"{amount} разборов",
+        description="Разбор голосовых",
+        payload=f"add_{amount}",
+        currency="XTR",
+        prices=[LabeledPrice(label="Оплата", amount=int(price))]
+    )
+
 
 @dp.pre_checkout_query()
 async def pre_checkout(query: PreCheckoutQuery):
-await query.answer(ok=True)
+    await query.answer(ok=True)
+
 
 @dp.message(F.successful_payment)
 async def payment(message: Message):
-amount = int(message.successful_payment.invoice_payload.split("_")[1])
-await update_balance(message.from_user.id, amount)
-await message.answer(f"✅ Добавлено {amount} разборов")
+    amount = int(message.successful_payment.invoice_payload.split("_")[1])
+    await update_balance(message.from_user.id, amount)
+    await message.answer(f"✅ Добавлено {amount} разборов")
+
 
 @dp.message(F.voice)
 async def voice(message: Message):
-uid = message.from_user.id
-if await get_balance(uid) <= 0:
-await message.answer("⚠️ Разборы закончились\n\nКупи пакет через меню /start")
-return
+    uid = message.from_user.id
 
-status = await message.answer("🎧 Слушаю...\n▰▱▱▱▱")  
-file = await bot.get_file(message.voice.file_id)  
-path = f"voice_{message.voice.file_id}.ogg"  
-await bot.download_file(file.file_path, path)  
-try:  
-    transcript, answer = await asyncio.to_thread(process_audio, path)  
-    await update_balance(uid, -1)  
-    new_bal = await get_balance(uid)  
-    await message.answer(
+    if await get_balance(uid) <= 0:
+        await message.answer("⚠️ Разборы закончились\n\nКупи пакет через меню /start")
+        return
 
-f"""
+    status = await message.answer("🎧 Слушаю...\n▰▱▱▱▱")
+
+    file = await bot.get_file(message.voice.file_id)
+    path = f"voice_{message.voice.file_id}.ogg"
+    await bot.download_file(file.file_path, path)
+
+    try:
+        transcript, answer = await asyncio.to_thread(process_audio, path)
+
+        await update_balance(uid, -1)
+        new_bal = await get_balance(uid)
+
+        await message.answer(
+            f"""
 📝 Разбор готов
 
 {answer}
 
 ✨ Осталось попыток: {new_bal}
 """,
-reply_markup=InlineKeyboardMarkup(
-inline_keyboard=[
-[InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")],
-[InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Попробуй этого бота")],
-[InlineKeyboardButton(text="💎 Получить ещё попытки", callback_data="buy_menu")],
-[InlineKeyboardButton(text="🚀 Подписаться", callback_data="channel")],
-]))
-except Exception as e: await message.answer(f"⚠️ Ошибка:\n{e}")
-finally:
-if os.path.exists(path): os.remove(path)
-await status.delete()
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")],
+                    [InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Попробуй этого бота")],
+                    [InlineKeyboardButton(text="💎 Получить ещё попытки", callback_data="buy_menu")],
+                    [InlineKeyboardButton(text="🚀 Подписаться", callback_data="channel")],
+                ]
+            )
+        )
 
-#=========================
+    except Exception as e:
+        await message.answer(f"⚠️ Ошибка:\n{e}")
 
-#WEB + MAIN (Стабильный запуск)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
 
-#=========================
+        await status.delete()
+
+
+# =========================
+# WEB + MAIN (Стабильный запуск)
+# =========================
 
 async def on_startup():
-print("Бот запущен и готов к работе")
+    print("Бот запущен и готов к работе")
+
 
 async def main():
-# Удаляем вебхуки, чтобы polling работал чисто
-await bot.delete_webhook(drop_pending_updates=True)
+    await bot.delete_webhook(drop_pending_updates=True)
 
-# Запускаем веб-сервер в фоне (Render требует наличия веб-сервера)  
-app = web.Application()  
-app.router.add_get("/", lambda r: web.Response(text="Бот работает"))  
-runner = web.AppRunner(app)  
-await runner.setup()  
-site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 10000)))  
-await site.start()  
-  
-# Запускаем самого бота  
-await dp.start_polling(bot, on_startup=on_startup)
+    app = web.Application()
+    app.router.add_get("/", lambda r: web.Response(text="Бот работает"))
 
-if name == "main":
-try:
-asyncio.run(main())
-except (KeyboardInterrupt, SystemExit):
-pass
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    site = web.TCPSite(
+        runner,
+        "0.0.0.0",
+        int(os.getenv("PORT", 10000))
+    )
+    await site.start()
+
+    await dp.start_polling(bot, on_startup=on_startup)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
