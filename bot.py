@@ -159,11 +159,15 @@ async def start_cmd(message: Message):
 
 @dp.callback_query(F.data == "send_audio")
 async def send_audio_prompt(callback: CallbackQuery):
-bal = await get_balance(callback.from_user.id)
-if bal <= 0:
-await callback.answer("⚠️ Получи ещё попытки", show_alert=True)
-else:
-await callback.answer("🎧 Отправь голосовое\n\nЯ быстро выделю главное, покажу настроение и предложу варианты ответа", show_alert=True)
+    bal = await get_balance(callback.from_user.id)
+
+    if bal <= 0:
+        await callback.answer("⚠️ Получи ещё попытки", show_alert=True)
+    else:
+        await callback.answer(
+            "🎧 Отправь голосовое\n\nЯ быстро выделю главное, покажу настроение и предложу варианты ответа",
+            show_alert=True
+        )
 
 @dp.callback_query(F.data == "channel")
 async def channel(callback: CallbackQuery):
