@@ -40,15 +40,15 @@ users_col = db.users
 # ФУНКЦИИ БД (Вместо JSON)
 
 async def get_balance(uid):
-user = await users_col.find_one({"uid": str(uid)})
-return user["balance"] if user else 5
+    user = await users_col.find_one({"uid": str(uid)})
+    return user["balance"] if user else 5
 
 async def update_balance(uid, amount_change):
-await users_col.update_one(
-{"uid": str(uid)},
-{"$inc": {"balance": amount_change}},
-upsert=True
-)
+    await users_col.update_one(
+        {"uid": str(uid)},
+        {"$inc": {"balance": amount_change}},
+        upsert=True
+    )
 
 #=========================
 
