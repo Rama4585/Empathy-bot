@@ -25,7 +25,8 @@ TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 
 client = OpenAI(
-api_key=os.getenv("OPENAI_API_KEY")
+    api_key=os.getenv("ROCKAPI_KEY"),
+    base_url="https://api.rockapi.ru/openai/v1"
 )
 
 bot = Bot(token=TOKEN)
