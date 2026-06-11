@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from aiogram import Bot
 
+# ИНИЦИАЛИЗАЦИЯ
 TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 
