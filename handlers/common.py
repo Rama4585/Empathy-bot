@@ -1,5 +1,13 @@
-from aiogram import Router
+from aiogram import Router, F
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, PreCheckoutQuery
+from database.db_funcs import get_balance, update_balance
+from services.ai_service import process_audio
+from config import bot
+import os
+import asyncio
+
 router = Router()
+
 # ​В common.py перенести все КЛАВИАТУРЫ и
 # хендлеры команд (/start, channel и т.д.).
 # И везде заменить @dp на @router.
