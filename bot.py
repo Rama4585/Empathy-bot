@@ -274,10 +274,10 @@ async def voice(message: Message):
     uid = message.from_user.id
 
     if await get_balance(uid) <= 0:
-        await message.answer("⚠️ Разборы закончились\n\nКупи пакет через меню /start")
+        await message.answer("⚠️ Разборы закончились. Купи пакет через меню /start")
         return
 
-    status = await message.answer("🎧 Слушаю...\n▰▱▱▱▱")
+    status = await message.answer("🎧 Слушаю... ▰▱▱▱▱")
 
     file = await bot.get_file(message.voice.file_id)
     path = f"voice_{message.voice.file_id}.ogg"
@@ -285,37 +285,26 @@ async def voice(message: Message):
 
     try:
         transcript, answer = await asyncio.to_thread(process_audio, path)
-
         await update_balance(uid, -1)
         new_bal = await get_balance(uid)
 
-        await message.answer(
-            f"""
-📝 Разбор готов
+        # Оставляем только важные кнопки
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")],
+            [InlineKeyboardButton(text="💎 Купить попытки", callback_data="buy_menu")]
+        ])
 
-{answer}
-
-✨ Осталось попыток: {new_bal}
-""",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")],
-                    [InlineKeyboardButton(text="📢 Поделиться ботом", switch_inline_query="Попробуй этого бота")],
-                    [InlineKeyboardButton(text="💎 Получить ещё попытки", callback_data="buy_menu")],
-                    [InlineKeyboardButton(text="🚀 Подписаться", callback_data="channel")],
-                ]
-            )
-        )
+        await message.answer(f"📝 **Результат разбора:**\n\n{answer}\n\n✨ Осталось: {new_bal}", reply_markup=kb)
 
     except Exception as e:
-        await message.answer(f"⚠️ Ошибка:\n{e}")
+        # Прячем технические подробности от пользователя
+        print(f"Error: {e}") 
+        await message.answer("⚠️ Ошибка при анализе. Попробуйте позже.")
 
     finally:
         if os.path.exists(path):
             os.remove(path)
-
         await status.delete()
-
 
 # =========================
 # WEB + MAIN (Стабильный запуск)
