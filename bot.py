@@ -1,13 +1,16 @@
 # =========================
 # WEB + MAIN (Стабильный запуск)
 # =========================
+import sys
+import os
+# Принудительно добавляем корень проекта в пути поиска
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import asyncio
-import os
 import logging
 from aiogram import Dispatcher
 from aiohttp import web
-from .config import bot
+from config import bot
 
 # Роутеры
 from handlers.common import router as common_router
