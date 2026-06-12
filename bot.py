@@ -11,6 +11,10 @@ from config import bot
 from handlers.common import router as common_router
 from handlers.voice import router as voice_router
 
+import os
+import logging
+print(f"DEBUG: Token from environment is: {os.getenv('BOT_TOKEN')[:5]}...") 
+
 dp = Dispatcher()
 
 async def on_startup():
