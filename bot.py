@@ -4,16 +4,12 @@
 
 import asyncio
 import os
-import sys
 import logging
 from aiogram import Dispatcher
 from aiohttp import web
-# ЭТОТ БЛОК НУЖЕН, ЧТОБЫ УБРАТЬ ModuleNotFoundError
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
 from config import bot
-# Импортируем твои роутеры
+
+# Роутеры
 from handlers.common import router as common_router
 from handlers.voice import router as voice_router
 
