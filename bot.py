@@ -2,7 +2,7 @@
 # WEB + MAIN (Стабильный запуск)
 # =========================
 
-async import asyncio
+import asyncio
 import os
 from aiogram import Dispatcher
 from aiohttp import web
