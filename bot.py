@@ -8,13 +8,15 @@ import sys
 import logging
 from aiogram import Dispatcher
 from aiohttp import web
+# ЭТОТ БЛОК НУЖЕН, ЧТОБЫ УБРАТЬ ModuleNotFoundError
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 from config import bot
 # Импортируем твои роутеры
 from handlers.common import router as common_router
 from handlers.voice import router as voice_router
 
-import os
-import logging
 print(f"DEBUG: Token from environment is: {os.getenv('BOT_TOKEN')[:5]}...") 
 
 dp = Dispatcher()
