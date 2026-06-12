@@ -4,6 +4,8 @@
 
 import asyncio
 import os
+import sys
+import logging
 from aiogram import Dispatcher
 from aiohttp import web
 from config import bot
