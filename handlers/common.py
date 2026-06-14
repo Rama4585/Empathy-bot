@@ -17,17 +17,13 @@ router = Router()
 #=========================
 #КЛАВИАТУРЫ
 #=========================
-def get_main_menu(balance):
+def get_main_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"🎤 Разобрать голосовое • осталось {balance}", callback_data="send_audio")],
-            [InlineKeyboardButton(text="✨ Посмотреть пример", callback_data="example")],
-            [InlineKeyboardButton(text="💎 Получить ещё попытки", callback_data="buy_menu")],
-            [InlineKeyboardButton(text="🚀 Подписаться на канал", callback_data="channel")],
-            [InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works")]
+            [InlineKeyboardButton(text="🎙 Отправить голосовое", callback_data="send_audio")],
+            [InlineKeyboardButton(text="⚡ Пополнить минуты", callback_data="buy_menu")]
         ]
     )
-
 def get_back_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]]
@@ -38,18 +34,51 @@ def get_back_menu():
 #=====================================
 @router.message(Command("start"))
 async def start_cmd(message: Message):
+
     uid = message.from_user.id
-    bal = await get_balance(uid)
-    text = """
-🎧 <b>Отправь голосовое</b>
+    bal = max(0, await get_balance(uid))
 
-Я быстро выделю главное
-Покажу настроение
-Предложу варианты ответа
+if bal > 0:
+    text = f"""
+🎙 <b>Разберу голосовое за 5–15 секунд</b>
 
-⏱ Обычно ответ занимает 5–15 секунд
+✓ Покажу главное
+✓ Определю настроение
+✓ Предложу варианты ответа
+
+⏱ Осталось: <b>{bal} мин обработки</b>
 """
-    await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu(bal))
+else:
+    text = """
+⚠️ <b>Минуты закончились</b>
+Пополни баланс или получи бонус
+"""
+    await message.answer(
+        text,
+        parse_mode="HTML",
+        reply_markup=get_main_menu()
+    )
+
+@router.callback_query(F.data == "send_audio")
+async def send_audio(callback: CallbackQuery):
+
+    bal = max(0, await get_balance(callback.from_user.id))
+
+    if bal <= 0:
+        await callback.answer("⚠️ Минуты закончились", show_alert=True)
+
+        await callback.message.answer(
+            "⚡ Пополни баланс через кнопку ниже",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="⚡ Пополнить минуты", callback_data="buy_menu")]
+                ]
+            )
+        )
+
+        return
+    await callback.answer()
+    await callback.message.answer("🎤 Пришли голосовое сообщение для разбора")
 
 @router.callback_query(F.data == "channel")
 async def channel(callback: CallbackQuery):
