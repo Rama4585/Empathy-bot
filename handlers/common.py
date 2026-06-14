@@ -38,7 +38,7 @@ async def start_cmd(message: Message):
     uid = message.from_user.id
     bal = max(0, await get_balance(uid))
 
-if bal > 0:
+    if bal > 0:
     text = f"""
 🎙 <b>Разберу голосовое за 5–15 секунд</b>
 
