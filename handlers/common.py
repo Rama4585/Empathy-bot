@@ -36,9 +36,7 @@ def get_extra_menu():
                 InlineKeyboardButton(text="🎧 Посмотреть пример", callback_data="example")
             ],
             [
-                InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works")
-            ],
-            [
+                InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works"),
                 InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")
             ]
         ]
@@ -46,7 +44,7 @@ def get_extra_menu():
 def get_back_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="menu")]
         ]
     )
     
@@ -71,9 +69,9 @@ async def start_cmd(message: Message):
 """
     else:
         text = """
-⚠️ <b>Минуты закончились</b>
+ <b>⏱ Время разбора закончилось</b>
 
-Пополни баланс или получи бонус
+Можно получить ещё разборы или пригласить друга 🎁
 """
 
     await message.answer(
