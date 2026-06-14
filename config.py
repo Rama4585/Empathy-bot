@@ -19,3 +19,5 @@ PACKAGES = [
     {"title": "50 разборов", "price": 60, "amount": 50},
     {"title": "Месячный запас (200)", "price": 200, "amount": 200},
 ]
+
+ADMIN_ID = 5548854946
