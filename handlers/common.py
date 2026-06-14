@@ -7,6 +7,7 @@ from config import bot
 import os
 import asyncio
 
+from config import PACKAGES  # Теперь он увидит список пакетов
 router = Router()
 
 # ​В common.py перенести все КЛАВИАТУРЫ и
