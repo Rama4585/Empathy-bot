@@ -6,6 +6,8 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher
 from openai import OpenAI
 
+logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
+
 # 1. КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ
 TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
