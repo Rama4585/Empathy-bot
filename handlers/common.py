@@ -21,13 +21,34 @@ def get_main_menu():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="🎙 Отправить голосовое", callback_data="send_audio")],
-            [InlineKeyboardButton(text="⚡ Пополнить минуты", callback_data="buy_menu")]
+            [InlineKeyboardButton(text="☰ Ещё", callback_data="menu")]
+        ]
+    )
+def get_extra_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✨ Получить ещё разборы", callback_data="packages"),
+                InlineKeyboardButton(text="🎁 Пригласить друга", callback_data="invite")
+            ],
+            [
+                InlineKeyboardButton(text="🚀 Наш канал", callback_data="channel"),
+                InlineKeyboardButton(text="🎧 Посмотреть пример", callback_data="example")
+            ],
+            [
+                InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works")
+            ],
+            [
+                InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")
+            ]
         ]
     )
 def get_back_menu():
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]]
-  )
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]
+        ]
+    )
     
 #=====================================
 # Хендлеры кнопок, справка итнавигация
@@ -67,13 +88,15 @@ async def send_audio(callback: CallbackQuery):
     bal = max(0, await get_balance(callback.from_user.id))
 
     if bal <= 0:
-        await callback.answer("⚠️ Минуты закончились", show_alert=True)
+        await callback.answer( """⏱ Время разбора закончилось
+
+Можно продлить время или пригласить друга 🎁""", show_alert=True)
 
         await callback.message.answer(
-            "⚡ Пополни баланс через кнопку ниже",
+            "✨ Получить ещё разборы",
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
-                    [InlineKeyboardButton(text="⚡ Пополнить минуты", callback_data="buy_menu")]
+                    [InlineKeyboardButton(text="⚡ Получить минуты", callback_data="packages")]
                 ]
             )
         )
@@ -84,22 +107,62 @@ async def send_audio(callback: CallbackQuery):
 
 @router.callback_query(F.data == "channel")
 async def channel(callback: CallbackQuery):
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Перейти на канал", url="https://t.me/empathy_community")],
-            [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]
+            [InlineKeyboardButton(text="🚀 Перейти в канал", url="https://t.me/empathy_community")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="menu")]
         ]
     )
+
     await callback.message.edit_text(
-        "🚀 Подпишись на канал\n\nЧто получишь:\n\n🚀 новые функции раньше всех\n🎁 дополнительные разборы\n🛠 показываем как развивается бот\n💬 можно предлагать идеи\n\nПрисоединяйся 👇",
+"""
+🚀 Наш канал
+
+Там можно:
+
+✨ узнавать о новых возможностях раньше других
+🎁 иногда получать дополнительные разборы
+🛠 следить за развитием проекта
+💬 задавать вопросы и предлагать идеи
+
+Будем рады видеть тебя 👇
+""",
         reply_markup=keyboard
     )
-    
+
+@router.callback_query(F.data == "menu")
+async def menu(callback: CallbackQuery):
+
+    await callback.message.edit_text(
+        "☰ Дополнительные возможности",
+        reply_markup=get_extra_menu()
+    )
+
 @router.callback_query(F.data == "main_menu")
 async def back(callback: CallbackQuery):
-    bal = await get_balance(callback.from_user.id)
+
+    bal = max(0, await get_balance(callback.from_user.id))
+
+    if bal > 0:
+        text = f"""
+🎙 <b>Разберу голосовое за 5–15 секунд</b>
+
+✓ Покажу главное
+✓ Определю настроение
+✓ Предложу варианты ответа
+
+⏱ Осталось: <b>{bal} мин обработки</b>
+"""
+    else:
+        text = """
+⏱ <b>Время разбора закончилось</b>
+
+Можно получить ещё разборы или пригласить друга 🎁
+"""
+
     await callback.message.edit_text(
-        "🎙 <b>Разберу голосовое за 5-15 секунд</b>\n\n✓ Покажу главное\n✓ Определю настроение\n✓ Предложу 3 ответа\n\n👇 Отправь голосовое",
+        text,
         parse_mode="HTML",
         reply_markup=get_main_menu()
     )
@@ -126,7 +189,7 @@ async def info(callback: CallbackQuery):
         reply_markup=get_back_menu()
     ) 
 
-@router.callback_query(F.data == "buy_menu")
+@router.callback_query(F.data == "packages")
 async def buy(callback: CallbackQuery):
     kb = [[InlineKeyboardButton(text=f"{p['title']} • {p['price']}⭐", callback_data=f"pay_{p['price']}_{p['amount']}")] for p in PACKAGES]
     kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
