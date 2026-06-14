@@ -7,7 +7,7 @@ from config import bot
 import os
 import asyncio
 
-from config import PACKAGES  # Теперь он увидит список пакетов
+from config import PACKAGES, ADMIN_ID # Теперь он увидит список пакетов
 router = Router()
 
 # ​В common.py перенести все КЛАВИАТУРЫ и
@@ -192,3 +192,28 @@ async def buy(callback: CallbackQuery):
     kb = [[InlineKeyboardButton(text=f"{p['title']} • {p['price']}⭐", callback_data=f"pay_{p['price']}_{p['amount']}")] for p in PACKAGES]
     kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
     await callback.message.edit_text("💎 Выбери пакет", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
+
+@router.message(Command("admin_add"))
+async def admin_add(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        _, uid, minutes = message.text.split()
+
+        uid = int(uid)
+        minutes = int(minutes)
+
+        old_balance = max(0, await get_balance(uid))
+
+        await update_balance(uid, old_balance + minutes)
+
+        await message.answer(
+            f"✅ Пользователю {uid}\nДобавлено {minutes} мин"
+        )
+
+    except:
+        await message.answer(
+            "Формат:\n/admin_add user_id минуты"
+        )
