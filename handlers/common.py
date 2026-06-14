@@ -39,7 +39,7 @@ async def start_cmd(message: Message):
     bal = max(0, await get_balance(uid))
 
     if bal > 0:
-    text = f"""
+        text = f"""
 🎙 <b>Разберу голосовое за 5–15 секунд</b>
 
 ✓ Покажу главное
@@ -48,11 +48,13 @@ async def start_cmd(message: Message):
 
 ⏱ Осталось: <b>{bal} мин обработки</b>
 """
-else:
-    text = """
+    else:
+        text = """
 ⚠️ <b>Минуты закончились</b>
+
 Пополни баланс или получи бонус
 """
+
     await message.answer(
         text,
         parse_mode="HTML",
