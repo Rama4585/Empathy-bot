@@ -17,3 +17,30 @@ async def update_balance(uid, amount_change):
         {"$inc": {"balance": amount_change}},
         upsert=True
     )
+
+async def save_analysis(uid, text):
+    await users_col.update_one(
+        {"uid": str(uid)},
+        {
+            "$push": {
+                "analyses": {
+                    "$each": [text],
+                    "$slice": -20
+                }
+            }
+        },
+        upsert=True
+    )
+    
+async def get_analyses(uid):
+
+    user = await users_col.find_one(
+        {"uid": str(uid)}
+    )
+    if not user:
+        return []
+        
+    return user.get(
+        "analyses",
+        []
+    )
