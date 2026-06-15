@@ -31,13 +31,20 @@ async def on_startup():
     print("Бот запущен и готов к работе")
 
 async def main():
+
     dp.include_router(common_router)
     dp.include_router(voice_router)
+
+    try:
+        await bot.session.close()
+    except:
+        pass
+
+    await asyncio.sleep(2)
 
     await bot.delete_webhook(
         drop_pending_updates=True
     )
-
     # Веб-сервер для Render
     app = web.Application()
     app.router.add_get(
