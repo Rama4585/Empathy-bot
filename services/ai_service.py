@@ -5,8 +5,21 @@ from config import client
 # ============
 def process_audio(file_path):
     with open(file_path, "rb") as audio_file:
-        transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file
+        )
 
+    print("ТРАНСКРИПТ:", repr(transcript.text))
+
+    text = transcript.text.strip()
+
+    if not text:
+        return text, "🎤 Не удалось распознать речь. Попробуйте отправить голосовое ещё раз."
+
+    if len(text) < 3:
+        return text, "🎤 Похоже, в голосовом слишком мало речи."
+    
     prompt = """
 Ты — помощник по анализу общения и подбору ответа.
 
@@ -134,24 +147,18 @@ def process_audio(file_path):
 дать ответ, который пользователь сможет отправить без редактирования.
 """
 
-    """
-Главная цель:
-дать ответ, который пользователь сможет отправить без редактирования.
-"""
-
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         temperature=0.8,
         messages=[
-            {
-                "role": "system",
-                "content": prompt
-            },
-            {
-                "role": "user",
-                "content": f"Текст голосового сообщения:\n\n{transcript.text}"
-            }
-        ]
-    )
-
-    return transcript.text, response.choices[0].message.content
+        {
+            "role": "system",
+            "content": prompt
+        },
+        {
+            "role": "user",
+            "content": f"Текст голосового сообщения:\n\n{text}"
+        }
+    ]
+)
+    return text, response.choices[0].message.content
