@@ -35,21 +35,24 @@ async def main():
     dp.include_router(common_router)
     dp.include_router(voice_router)
 
-    try:
-        await bot.session.close()
-    except:
-        pass
+    info = await bot.get_webhook_info()
 
-    await asyncio.sleep(2)
+    print("WEBHOOK:", info.url)
 
     await bot.delete_webhook(
         drop_pending_updates=True
     )
+
+    print("WEBHOOK УДАЛЕН")
+
     # Веб-сервер для Render
     app = web.Application()
+
     app.router.add_get(
         "/",
-        lambda r: web.Response(text="Бот работает")
+        lambda r: web.Response(
+            text="Бот работает"
+        )
     )
 
     runner = web.AppRunner(app)
@@ -65,15 +68,17 @@ async def main():
     await site.start()
 
     try:
+
         await dp.start_polling(
             bot,
             on_startup=on_startup
         )
 
     finally:
-        await bot.session.close()
-        await runner.cleanup()
 
+        await bot.session.close()
+
+        await runner.cleanup()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
