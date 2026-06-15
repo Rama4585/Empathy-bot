@@ -7,8 +7,11 @@ from aiogram.types import (
     LabeledPrice,
     PreCheckoutQuery
 )
-
-from database.db_funcs import get_balance, update_balance
+from database.db_funcs import (
+    get_balance,
+    update_balance,
+    save_analysis
+)
 from services.ai_service import process_audio
 from config import bot
 
@@ -151,6 +154,10 @@ async def voice(message: Message):
         transcript, answer = await asyncio.to_thread(
             process_audio,
             path
+        )
+        await save_analysis(
+    uid,
+    answer
         )
 
         loader.cancel()
