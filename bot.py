@@ -35,15 +35,9 @@ async def main():
     dp.include_router(common_router)
     dp.include_router(voice_router)
 
-    info = await bot.get_webhook_info()
-
-    print("WEBHOOK:", info.url)
-
     await bot.delete_webhook(
         drop_pending_updates=True
     )
-
-    print("WEBHOOK УДАЛЕН")
 
     # Веб-сервер для Render
     app = web.Application()
