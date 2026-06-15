@@ -32,11 +32,14 @@ def get_extra_menu():
                 InlineKeyboardButton(text="🎁 Пригласить друга", callback_data="invite")
             ],
             [
-                InlineKeyboardButton(text="🚀 Наш канал", callback_data="channel"),
+                InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works"),
                 InlineKeyboardButton(text="🎧 Посмотреть пример", callback_data="example")
             ],
             [
-                InlineKeyboardButton(text="❓ Как это работает", callback_data="how_it_works"),
+                InlineKeyboardButton(text="🚀 Наш канал", callback_data="channel"),
+                InlineKeyboardButton(text="📚 Мои разборы", callback_data="my_results")
+            ],
+            [
                 InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")
             ]
         ]
@@ -65,7 +68,7 @@ async def start_cmd(message: Message):
 ✓ Определю настроение
 ✓ Предложу варианты ответа
 
-⏱ Осталось: <b>{bal} мин обработки</b>
+⏱ Осталось: <b>{round(bal / 60, 1)} мин обработки</b>
 """
     else:
         text = """
@@ -150,7 +153,7 @@ async def back(callback: CallbackQuery):
 ✓ Определю настроение
 ✓ Предложу варианты ответа
 
-⏱ Осталось: <b>{bal} мин обработки</b>
+⏱ Осталось: <b>{round(bal / 60, 1)} мин обработки</b>
 """
     else:
         text = """
@@ -193,6 +196,7 @@ async def buy(callback: CallbackQuery):
     kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
     await callback.message.edit_text("💎 Выбери пакет", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
 
+
 @router.message(Command("admin_add"))
 async def admin_add(message: Message):
 
@@ -205,9 +209,7 @@ async def admin_add(message: Message):
         uid = int(uid)
         minutes = int(minutes)
 
-        old_balance = max(0, await get_balance(uid))
-
-        await update_balance(uid, old_balance + minutes)
+        await update_balance(uid, minutes * 60)
 
         await message.answer(
             f"✅ Пользователю {uid}\nДобавлено {minutes} мин"
@@ -217,3 +219,65 @@ async def admin_add(message: Message):
         await message.answer(
             "Формат:\n/admin_add user_id минуты"
         )
+
+@router.callback_query(F.data == "my_results")
+async def my_results(callback: CallbackQuery):
+
+    data = await get_analyses(
+        callback.from_user.id
+    )
+
+    if not data:
+
+        await callback.message.edit_text(
+            "📚 Пока нет сохранённых разборов",
+            reply_markup=get_back_menu()
+        )
+
+        return
+
+    text = "📚 Последние разборы:\n\n"
+
+    for i, item in enumerate(
+        reversed(data),
+        1
+    ):
+
+        text += (
+            f"{i}. "
+            f"{item[:350]}\n\n"
+        )
+
+    await callback.message.edit_text(
+        text[:4000],
+        reply_markup=get_back_menu()
+)
+
+
+
+
+
+
+
+
+
+
+#=========================
+# ГОЛОСОВОЕ
+#=========================
+
+#=========================
+# КАНАЛ
+#=========================
+
+#=========================
+# МЕНЮ
+#=========================
+
+#=========================
+# ПАКЕТЫ
+#=========================
+
+#=========================
+# МОИ РАЗБОРЫ
+#=========================
