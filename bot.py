@@ -33,24 +33,36 @@ async def on_startup():
 async def main():
     dp.include_router(common_router)
     dp.include_router(voice_router)
-    
-    await bot.delete_webhook(drop_pending_updates=True)
+
+    await bot.delete_webhook(
+        drop_pending_updates=True
+    )
 
     # Веб-сервер для Render
     app = web.Application()
-    app.router.add_get("/", lambda r: web.Response(text="Бот работает"))
+    app.router.add_get(
+        "/",
+        lambda r: web.Response(text="Бот работает")
+    )
+
     runner = web.AppRunner(app)
+
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 10000)))
+
+    site = web.TCPSite(
+        runner,
+        "0.0.0.0",
+        int(os.getenv("PORT", 10000))
+    )
+
     await site.start()
 
     # Запуск бота
-await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(
+        bot,
+        on_startup=on_startup
+    )
 
-await dp.start_polling(
-    bot,
-    on_startup=on_startup
-)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -60,4 +72,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"Ошибка запуска: {e}")
-        
