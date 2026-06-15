@@ -1,5 +1,6 @@
 from config import client
 
+
 # ============
 # OPENAI
 # ============
@@ -14,19 +15,32 @@ def process_audio(file_path):
             file=audio_file
         )
 
-    print("ТРАНСКРИПТ:", repr(transcript.text))
-    print("ДЛИНА:", len(transcript.text))
-    print("СЛОВ:", len(transcript.text.split()))
-
     text = transcript.text.strip()
 
+    print("ТРАНСКРИПТ:", repr(text))
+    print("ДЛИНА:", len(text))
+    print("СЛОВ:", len(text.split()))
+
+    # вообще ничего не распознали
     if not text:
         print("ПУСТОЙ ТРАНСКРИПТ")
-        return text, "🎤 Не удалось распознать речь."
 
-    if len(text) < 3:
-        print("СЛИШКОМ КОРОТКО")
-        return text, "🎤 Похоже, в голосовом слишком мало речи."
+        return (
+            "",
+            "🎤 Не удалось распознать речь."
+        )
+
+    # защита от шума / короткой тишины
+    if (
+        len(text.split()) <= 3
+        and len(text) < 20
+    ):
+        print("ПОХОЖЕ НА ШУМ ИЛИ ТИШИНУ")
+
+        return (
+            "",
+            "🎤 Похоже, в голосовом слишком мало речи."
+        )
     
     prompt = """
 Ты — помощник по анализу общения и подбору ответа.
