@@ -14,10 +14,12 @@ client = OpenAI(
 bot = Bot(token=TOKEN)
 
 PACKAGES = [
-    {"title": "1 разбор", "price": 2, "amount": 1},
-    {"title": "10 разборов", "price": 15, "amount": 10},
-    {"title": "50 разборов", "price": 60, "amount": 50},
-    {"title": "Месячный запас (200)", "price": 200, "amount": 200},
+    {"title": "1 минута", "price": 3, "amount": 1},
+    {"title": "10 минут", "price": 20, "amount": 10},
+    {"title": "30 минут", "price": 55, "amount": 30},
+    {"title": "1 час", "price": 90, "amount": 60},
+    {"title": "3 часа", "price": 220, "amount": 180},
+    {"title": "5 часов", "price": 300, "amount": 300},
 ]
 
 ADMIN_ID = 5548854946
