@@ -71,7 +71,8 @@ async def main():
 
         await dp.start_polling(
             bot,
-            on_startup=on_startup
+            on_startup=on_startup,
+            handle_signals=False
         )
 
     finally:
