@@ -155,9 +155,21 @@ async def voice(message: Message):
             process_audio,
             path
         )
+
+        if not transcript:
+            loader.cancel()
+
+            try:
+                await status.delete()
+            except:
+                pass
+
+            await message.answer(answer)
+            return
+
         await save_analysis(
-    uid,
-    answer
+            uid,
+            answer
         )
 
         loader.cancel()
