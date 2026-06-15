@@ -4,6 +4,10 @@ from config import client
 # OPENAI
 # ============
 def process_audio(file_path):
+
+    print("=== PROCESS_AUDIO ЗАПУЩЕН ===")
+    print("ФАЙЛ:", file_path)
+
     with open(file_path, "rb") as audio_file:
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
@@ -15,9 +19,11 @@ def process_audio(file_path):
     text = transcript.text.strip()
 
     if not text:
-        return text, "🎤 Не удалось распознать речь. Попробуйте отправить голосовое ещё раз."
+        print("ПУСТОЙ ТРАНСКРИПТ")
+        return text, "🎤 Не удалось распознать речь."
 
     if len(text) < 3:
+        print("СЛИШКОМ КОРОТКО")
         return text, "🎤 Похоже, в голосовом слишком мало речи."
     
     prompt = """
