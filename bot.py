@@ -45,12 +45,19 @@ async def main():
     await site.start()
 
     # Запуск бота
-    await dp.start_polling(bot, on_startup=on_startup)
+await bot.delete_webhook(drop_pending_updates=True)
+
+await dp.start_polling(
+    bot,
+    on_startup=on_startup
+)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
     try:
         asyncio.run(main())
+
     except Exception as e:
         print(f"Ошибка запуска: {e}")
         
