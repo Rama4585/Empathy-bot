@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, PreCheckoutQuery
-from database.db_funcs import get_balance, update_balance
+from database.db_funcs import get_balance, update_balance, get_analyses
 from services.ai_service import process_audio
 from config import bot
 import os
