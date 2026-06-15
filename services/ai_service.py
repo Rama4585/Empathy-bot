@@ -15,6 +15,8 @@ def process_audio(file_path):
         )
 
     print("ТРАНСКРИПТ:", repr(transcript.text))
+    print("ДЛИНА:", len(transcript.text))
+    print("СЛОВ:", len(transcript.text.split()))
 
     text = transcript.text.strip()
 
