@@ -57,11 +57,15 @@ async def main():
 
     await site.start()
 
-    # Запуск бота
-    await dp.start_polling(
-        bot,
-        on_startup=on_startup
-    )
+    try:
+        await dp.start_polling(
+            bot,
+            on_startup=on_startup
+        )
+
+    finally:
+        await bot.session.close()
+        await runner.cleanup()
 
 
 if __name__ == "__main__":
