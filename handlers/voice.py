@@ -19,6 +19,7 @@ import os
 import asyncio
 
 router = Router()
+last_answers = {}
 
 
 # ==========================
@@ -171,6 +172,7 @@ async def voice(message: Message):
             uid,
             answer
         )
+        last_answers[uid] = answer
 
         loader.cancel()
 
@@ -199,23 +201,19 @@ async def voice(message: Message):
             .rstrip(".")
         )
 
-        kb = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="🔁 Разобрать ещё одно",
-                        callback_data="main_menu"
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="✨ Получить ещё разборы",
-                        callback_data="buy_menu"
-                    )
-                ]
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="📋 1", callback_data="copy_1"),
+                InlineKeyboardButton(text="📋 2", callback_data="copy_2"),
+                InlineKeyboardButton(text="📋 3", callback_data="copy_3")
+            ],
+            [
+                InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")
+            ],
+            [
+                InlineKeyboardButton(text="✨ Получить ещё разборы", callback_data="buy_menu")
             ]
-        )
-
+        ])
         await message.reply(
             f"📝 Результат разбора:\n\n"
             f"{answer}\n\n"
@@ -242,3 +240,60 @@ async def voice(message: Message):
 
         if os.path.exists(path):
             os.remove(path)
+
+# ==========================
+# Кнопки копирования ответа
+# ==========================
+@router.callback_query(F.data.startswith("copy_"))
+async def copy_reply(callback: CallbackQuery):
+
+    text = last_answers.get(
+        callback.from_user.id
+    )
+
+    if not text:
+        await callback.answer(
+            "Разбор не найден",
+            show_alert=True
+        )
+        return
+
+    try:
+
+        parts = text.split("Вариант")
+
+        num = callback.data[-1]
+
+        selected = parts[int(num)].strip()
+
+        for stop in [
+            "Вариант 1",
+            "Вариант 2",
+            "Вариант 3",
+            "⏱"
+        ]:
+            if stop in selected:
+                selected = selected.split(stop)[0]
+
+        if "—" in selected:
+            selected = selected.split("—", 1)[1]
+
+        if ":" in selected:
+            selected = selected.split(":", 1)[1]
+
+        selected = selected.strip()
+
+        await callback.message.answer(
+            selected
+        )
+
+        await callback.answer(
+            "Отправил 👌"
+        )
+
+    except:
+
+        await callback.answer(
+            "Не удалось извлечь вариант",
+            show_alert=True
+        )
