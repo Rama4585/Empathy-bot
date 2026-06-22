@@ -7,17 +7,20 @@ from aiogram.types import (
     LabeledPrice,
     PreCheckoutQuery
 )
+
 from database.db_funcs import (
     get_balance,
     update_balance,
     save_analysis
 )
+
 from services.ai_service import process_audio
 from config import bot
 
 import os
 import asyncio
 import traceback
+
 
 router = Router()
 last_answers = {}
@@ -136,7 +139,6 @@ async def voice(message: Message):
             for frame in frames:
 
                 try:
-
                     await status.edit_text(
                         f"🎧 Голосовое получено\n\n"
                         f"⏳ Анализирую {frame}"
@@ -150,21 +152,39 @@ async def voice(message: Message):
     loader = asyncio.create_task(
         loading()
     )
-    
-try:
 
-    print(
-        f"START process_audio | duration={message.voice.duration}"
-    )
+    try:
 
-    transcript, answer = await asyncio.to_thread(
-        process_audio,
-        path
-    )
+        print(
+            f"START process_audio | duration={message.voice.duration}"
+        )
 
-    print("END process_audio")
+        transcript, answer = await asyncio.to_thread(
+            process_audio,
+            path
+        )
 
-    if not transcript:
+        print("END process_audio")
+
+        if not transcript:
+
+            loader.cancel()
+
+            try:
+                await status.delete()
+            except:
+                pass
+
+            await message.answer(answer)
+            return
+
+        await save_analysis(
+            uid,
+            answer
+        )
+
+        last_answers[uid] = answer
+
         loader.cancel()
 
         try:
@@ -172,102 +192,86 @@ try:
         except:
             pass
 
-        await message.answer(answer)
-        return
+        bal = await get_balance(uid)
 
-    await save_analysis(
-        uid,
-        answer
-    )
+        spent = min(
+            bal,
+            message.voice.duration
+        )
 
-    last_answers[uid] = answer
+        await update_balance(
+            uid,
+            -spent
+        )
 
-    loader.cancel()
+        new_bal = await get_balance(uid)
 
-    try:
-        await status.delete()
-    except:
-        pass
+        remaining = (
+            f"{new_bal / 60:.1f}"
+            .rstrip("0")
+            .rstrip(".")
+        )
 
-    bal = await get_balance(uid)
-
-    spent = min(
-        bal,
-        message.voice.duration
-    )
-
-    await update_balance(
-        uid,
-        -spent
-    )
-
-    new_bal = await get_balance(uid)
-
-    remaining = (
-        f"{new_bal / 60:.1f}"
-        .rstrip("0")
-        .rstrip(".")
-    )
-
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📋 1",
-                    callback_data="copy_1"
-                ),
-                InlineKeyboardButton(
-                    text="📋 2",
-                    callback_data="copy_2"
-                ),
-                InlineKeyboardButton(
-                    text="📋 3",
-                    callback_data="copy_3"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🔁 Разобрать ещё одно",
-                    callback_data="main_menu"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="✨ Получить ещё разборы",
-                    callback_data="buy_menu"
-                )
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📋 1",
+                        callback_data="copy_1"
+                    ),
+                    InlineKeyboardButton(
+                        text="📋 2",
+                        callback_data="copy_2"
+                    ),
+                    InlineKeyboardButton(
+                        text="📋 3",
+                        callback_data="copy_3"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🔁 Разобрать ещё одно",
+                        callback_data="main_menu"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="✨ Получить ещё разборы",
+                        callback_data="buy_menu"
+                    )
+                ]
             ]
-        ]
-    )
+        )
 
-    await message.reply(
-        f"📝 Результат разбора:\n\n"
-        f"{answer}\n\n"
-        f"⏱ Осталось: {remaining} мин",
-        reply_markup=kb
-    )
+        await message.reply(
+            f"📝 Результат разбора:\n\n"
+            f"{answer}\n\n"
+            f"⏱ Осталось: {remaining} мин",
+            reply_markup=kb
+        )
 
-except Exception as e:
+    except Exception as e:
 
-    loader.cancel()
+        loader.cancel()
 
-    print("\n===== ERROR =====")
-    print(traceback.format_exc())
-    print("=================\n")
+        print("\n===== ERROR =====")
+        print(traceback.format_exc())
+        print("=================\n")
 
-    try:
-        await status.delete()
-    except:
-        pass
+        try:
+            await status.delete()
+        except:
+            pass
 
-    await message.answer(
-        f"⚠️ Ошибка:\n{e}"
-    )
+        await message.answer(
+            f"⚠️ Ошибка:\n{e}"
+        )
 
-finally:
+    finally:
 
-    if os.path.exists(path):
-        os.remove(path)
+        if os.path.exists(path):
+            os.remove(path)
+
 
 # ==========================
 # Кнопки копирования ответа
