@@ -17,6 +17,7 @@ from config import bot
 
 import os
 import asyncio
+import traceback
 
 router = Router()
 last_answers = {}
@@ -149,97 +150,124 @@ async def voice(message: Message):
     loader = asyncio.create_task(
         loading()
     )
+    
+try:
+
+    print(
+        f"START process_audio | duration={message.voice.duration}"
+    )
+
+    transcript, answer = await asyncio.to_thread(
+        process_audio,
+        path
+    )
+
+    print("END process_audio")
+
+    if not transcript:
+        loader.cancel()
+
+        try:
+            await status.delete()
+        except:
+            pass
+
+        await message.answer(answer)
+        return
+
+    await save_analysis(
+        uid,
+        answer
+    )
+
+    last_answers[uid] = answer
+
+    loader.cancel()
 
     try:
+        await status.delete()
+    except:
+        pass
 
-        transcript, answer = await asyncio.to_thread(
-            process_audio,
-            path
-        )
+    bal = await get_balance(uid)
 
-        if not transcript:
-            loader.cancel()
+    spent = min(
+        bal,
+        message.voice.duration
+    )
 
-            try:
-                await status.delete()
-            except:
-                pass
+    await update_balance(
+        uid,
+        -spent
+    )
 
-            await message.answer(answer)
-            return
+    new_bal = await get_balance(uid)
 
-        await save_analysis(
-            uid,
-            answer
-        )
-        last_answers[uid] = answer
+    remaining = (
+        f"{new_bal / 60:.1f}"
+        .rstrip("0")
+        .rstrip(".")
+    )
 
-        loader.cancel()
-
-        try:
-            await status.delete()
-        except:
-            pass
-
-        bal = await get_balance(uid)
-
-        spent = min(
-            bal,
-            message.voice.duration
-        )
-
-        await update_balance(
-            uid,
-            -spent
-        )
-
-        new_bal = await get_balance(uid)
-
-        remaining = (
-            f"{new_bal / 60:.1f}"
-            .rstrip("0")
-            .rstrip(".")
-        )
-
-        kb = InlineKeyboardMarkup(inline_keyboard=[
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
             [
-                InlineKeyboardButton(text="📋 1", callback_data="copy_1"),
-                InlineKeyboardButton(text="📋 2", callback_data="copy_2"),
-                InlineKeyboardButton(text="📋 3", callback_data="copy_3")
+                InlineKeyboardButton(
+                    text="📋 1",
+                    callback_data="copy_1"
+                ),
+                InlineKeyboardButton(
+                    text="📋 2",
+                    callback_data="copy_2"
+                ),
+                InlineKeyboardButton(
+                    text="📋 3",
+                    callback_data="copy_3"
+                )
             ],
             [
-                InlineKeyboardButton(text="🔁 Разобрать ещё одно", callback_data="main_menu")
+                InlineKeyboardButton(
+                    text="🔁 Разобрать ещё одно",
+                    callback_data="main_menu"
+                )
             ],
             [
-                InlineKeyboardButton(text="✨ Получить ещё разборы", callback_data="buy_menu")
+                InlineKeyboardButton(
+                    text="✨ Получить ещё разборы",
+                    callback_data="buy_menu"
+                )
             ]
-        ])
-        await message.reply(
-            f"📝 Результат разбора:\n\n"
-            f"{answer}\n\n"
-            f"⏱ Осталось: {remaining} мин",
-            reply_markup=kb
-        )
+        ]
+    )
 
-    except Exception as e:
+    await message.reply(
+        f"📝 Результат разбора:\n\n"
+        f"{answer}\n\n"
+        f"⏱ Осталось: {remaining} мин",
+        reply_markup=kb
+    )
 
-        loader.cancel()
+except Exception as e:
 
-        print(f"Error: {e}")
+    loader.cancel()
 
-        try:
-            await status.delete()
-        except:
-            pass
+    print("\n===== ERROR =====")
+    print(traceback.format_exc())
+    print("=================\n")
 
-        await message.answer(
-            "⚠️ Ошибка при анализе. Попробуйте позже."
-        )
+    try:
+        await status.delete()
+    except:
+        pass
 
-    finally:
+    await message.answer(
+        f"⚠️ Ошибка:\n{e}"
+    )
 
-        if os.path.exists(path):
-            os.remove(path)
+finally:
+
+    if os.path.exists(path):
+        os.remove(path)
 
 # ==========================
 # Кнопки копирования ответа
